@@ -1,7 +1,5 @@
 ﻿# LightGuard: Zero-Overhead WiFi Security via Physical-Layer LiFi Key Bootstrapping
 
-**Demo paper accepted at MobiSys '26** — *The 24th Annual International Conference on Mobile Systems, Applications, and Services*, Cambridge, UK, June 2026.
-
 ---
 
 ## Motivation
