@@ -1,0 +1,42 @@
+# Build artifacts
+*.o
+*.d
+*.a
+*.so
+*.pyc
+__pycache__/
+
+# Compiled binaries
+hostapd2
+hostapd_cli2
+wpa_supplicant2
+wpa_cli2
+hostapd_test
+hostapd_cli_test
+wpa_supplicant_test
+wpa_cli_test
+
+# Build directories
+build/
+
+# Logs
+*.log
+
+# Temporary files
+/tmp/
+*.tmp
+*.swp
+*.swo
+*~
+
+# Trigger files
+rekey_triggered
+rekey_triggered_sta
+
+# Archives
+*.tar.gz
+*.zip
+
+# OS files
+.DS_Store
+Thumbs.db
