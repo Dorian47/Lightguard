@@ -3,7 +3,7 @@ import os
 import random
 import time
 
-CSI_LEN = 8
+PASSPHRASE_LEN = 8
 PORT = 9911
 
 
@@ -21,19 +21,16 @@ def get_from_time():
 
 
 
-def get_csi():
-    #wait til later
-    #return b"00000000"
+def generate_passphrase():
     pswd = get_from_time()
     b = bytearray()
-    b.extend(map(ord,pswd))
+    b.extend(map(ord, pswd))
     return b
 
 
-def csi_to_pass(csi):
-    #wait til later
-    print(csi)
-    return csi[:8]
+def passphrase_to_bytes(raw):
+    print(raw)
+    return raw[:8]
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -46,9 +43,9 @@ try:
     while True:
         conn, addr = server.accept()
         print(f"[Random Key] Connection from {addr}")
-        csi = get_csi()
+        raw = generate_passphrase()
 
-        pswd = csi_to_pass(csi)
+        pswd = passphrase_to_bytes(raw)
         print(f"[Random Key] generating pmk {pswd}")
         conn.sendall(pswd)
         conn.close()

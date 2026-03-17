@@ -19,7 +19,7 @@ For key port and script details, see:
   - [LiFi_link/hostapd-2.10-lifi/scripts/system_manager.py](LiFi_link/hostapd-2.10-lifi/scripts/system_manager.py)
   - Modify STA IP, STA MAC, rekey interval, etc.
 - LiFi STA passphrase injection script:
-  - [LiFi_link/wpa_supplicant-2.10-lifi/scripts/get_csi_pmk.py](LiFi_link/wpa_supplicant-2.10-lifi/scripts/get_csi_pmk.py)
+  - [LiFi_link/wpa_supplicant-2.10-lifi/scripts/sta_passphrase.py](LiFi_link/wpa_supplicant-2.10-lifi/scripts/sta_passphrase.py)
   - Modify IFNAME, CTRL_DIR, WPA_CLI path.
 
 ### WiFi Side
@@ -60,4 +60,4 @@ Linux STA side:
 
 - No PTK injection logs: verify the LiFi PTK receiver script is running.
 - WiFi PTK not installed: verify WiFi listening ports match the injection scripts.
-- STA cannot update passphrase: check IFNAME / CTRL_DIR / WPA_CLI in get_csi_pmk.py.
+- STA cannot update passphrase: check IFNAME / CTRL_DIR / WPA_CLI in sta_passphrase.py.

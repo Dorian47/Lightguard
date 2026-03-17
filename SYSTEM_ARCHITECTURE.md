@@ -63,9 +63,9 @@ This system implements a hybrid WiFi/LiFi communication architecture with **sync
 │                                                                                         │
 │  ┌─────────────────────┐     ┌─────────────────────┐     ┌─────────────────────┐       │
 │  │ get_random_time.py  │     │  system_manager.py  │     │  ptk_receiver_ap.py │       │
-│  │  (CSI/PMK Server)   │     │  (Rekey Controller) │     │  (PTK Forwarder)    │       │
+│  │ (Passphrase Server) │     │  (Rekey Controller) │     │  (PTK Forwarder)    │       │
 │  │                     │     │                     │     │                     │       │
-│  │  Listen: :9911      │────►│  1. Get CSI/Pass    │     │  Listen: :8877      │       │
+│  │  Listen: :9911      │────►│  1. Get Passphrase  │     │  Listen: :8877      │       │
 │  │  Provide: PMK/Pass  │     │  2. Send to STA     │─────│  Receive: PTK       │       │
 │  │                     │     │  3. Trigger Rekey   │     │  Forward: WiFi AP   │       │
 │  └─────────────────────┘     └──────────┬──────────┘     └──────────┬──────────┘       │
@@ -80,11 +80,11 @@ This system implements a hybrid WiFi/LiFi communication architecture with **sync
 │  ┌─────────────────────────────────────────────────────────────────────────────────┐   │
 │  │                              hostapd2 (LiFi AP)                                  │   │
 │  │  ┌───────────────────┐  ┌───────────────────┐  ┌───────────────────────────┐    │   │
-│  │  │ TCP Listener      │  │ CSI/PMK Interface │  │ PTK Push                  │    │   │
+│  │  │ TCP Listener      │  │ PMK Interface     │  │ PTK Push                  │    │   │
 │  │  │ :7789             │  │ Connect: :9911    │  │ Send to: :8877            │    │   │
 │  │  │                   │  │                   │  │                           │    │   │
 │  │  │ Cmd: setptk       │  │ Read: 32B PMK     │  │ Push: 48B PTK             │    │   │
-│  │  │ <MAC> <PASS>      │  │ from CSI server   │  │ (KCK+KEK+TK)              │    │   │
+│  │  │ <MAC> <PASS>      │  │ from pass. server │  │ (KCK+KEK+TK)              │    │   │
 │  │  └───────────────────┘  └───────────────────┘  └───────────────────────────┘    │   │
 │  └─────────────────────────────────────────────────────────────────────────────────┘   │
 │                                                                                         │
@@ -116,7 +116,7 @@ This system implements a hybrid WiFi/LiFi communication architecture with **sync
 │                                                      │                                  │
 │                                                      ▼                                  │
 │  ┌─────────────────────┐     ┌─────────────────────────────────────────────────────┐   │
-│  │  get_csi_pmk.py     │     │                  ptk_receiver_sta.py                │   │
+│  │  sta_passphrase.py  │     │                  ptk_receiver_sta.py                │   │
 │  │  (Pass Listener)    │     │                  (PTK Forwarder + Sync)             │   │
 │  │                     │     │                                                     │   │
 │  │  Listen: :2222      │     │  Listen LiFi PTK: :8877                            │   │
@@ -164,14 +164,14 @@ This system implements a hybrid WiFi/LiFi communication architecture with **sync
 │                                                                                                 │
 │  ┌─────────────────┐                                                                           │
 │  │ STEP 1          │                                                                           │
-│  │ CSI Server      │  Provide CSI/Passphrase                                                   │
+│  │ Pass. Server    │  Provide Passphrase                                                       │
 │  │ :9911           │─────────────────────┐                                                     │
 │  └─────────────────┘                     │                                                     │
 │                                          ▼                                                     │
 │  ┌─────────────────────────────────────────────────────────────────────────────────────────┐   │
 │  │ STEP 2: System Manager (Rekey Controller)                                               │   │
 │  │                                                                                          │   │
-│  │  1. Connect to CSI Server (:9911)         ─────────► Get new passphrase                 │   │
+│  │  1. Connect to Passphrase Server (:9911)  ─────────► Get new passphrase                 │   │
 │  │  2. Send passphrase to STA (:2222)        ═══════════════════════════════════════╗      │   │
 │  │  3. Wait for ACK + PSK Hash verification                                         ║      │   │
 │  │  4. Flush PMKSA cache (hostapd_cli)                                              ║      │   │
@@ -182,7 +182,7 @@ This system implements a hybrid WiFi/LiFi communication architecture with **sync
 │                              <MAC> <PASS> │                                         ║          │
 │                                           ▼                                         ▼          │
 │  ┌─────────────────────────────────────────────────┐       ┌─────────────────────────────────┐ │
-│  │ STEP 3: hostapd2 (LiFi AP)                      │       │ get_csi_pmk.py                  │ │
+│  │ STEP 3: hostapd2 (LiFi AP)                      │       │ sta_passphrase.py               │ │
 │  │                                                 │       │ Listen: :2222                   │ │
 │  │  1. Receive setptk command on :7789             │       │                                 │ │
 │  │  2. Update PMK for specified STA MAC            │       │  1. Receive passphrase          │ │
@@ -244,11 +244,11 @@ This system implements a hybrid WiFi/LiFi communication architecture with **sync
 
 | Port  | Location | Direction | Protocol | Purpose |
 |-------|----------|-----------|----------|---------|
-| 9911  | AP       | hostapd ← CSI Server | TCP | Read CSI/Passphrase/PMK |
+| 9911  | AP       | hostapd ← Passphrase Server | TCP | Read Passphrase/PMK |
 | 7789  | AP       | hostapd ← system_manager | TCP | setptk command to trigger rekey |
 | 7788  | AP       | hostapd ← control | TCP | General hostapd control |
 | 8877  | Both     | hostapd/wpa_supplicant → ptk_receiver | TCP | Push PTK after 4-Way Handshake |
-| 2222  | STA      | get_csi_pmk ← system_manager | TCP | Passphrase distribution to STA |
+| 2222  | STA      | sta_passphrase ← system_manager | TCP | Passphrase distribution to STA |
 | 2223  | STA      | ptk_receiver_sta ← ptk_receiver_ap | TCP | PTK sync coordination |
 | 9899  | AP       | hostapd_test (WiFi) ← ptk_receiver_ap | TCP | PTK injection to WiFi AP |
 | 9900  | STA      | wpa_supplicant_test (WiFi) ← ptk_receiver_sta | TCP | PTK injection to WiFi STA |
@@ -297,7 +297,7 @@ This system implements a hybrid WiFi/LiFi communication architecture with **sync
 │   │                    │        Wait 20 seconds                │                               │
 │   │                    ▼                                       ▼                               │
 │   │      ┌────────────────────────────────┐       ┌────────────────────────────────┐           │
-│   │  2.  │ Start get_random_time.py       │       │ Start get_csi_pmk.py           │           │
+│   │  2.  │ Start get_random_time.py       │       │ Start sta_passphrase.py        │           │
 │   │      │ (CSI Server on :9911)          │       │ (Listen on :2222)              │           │
 │   │      └────────────────────────────────┘       └────────────────────────────────┘           │
 │   │                    │                                       │                               │

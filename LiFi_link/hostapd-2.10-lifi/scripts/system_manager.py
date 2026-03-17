@@ -6,8 +6,8 @@ import traceback
 import hashlib
 import subprocess
 
-CSI_HOST = '127.0.0.1'
-CSI_PORT = 9911
+PASSPHRASE_SERVER_HOST = '127.0.0.1'
+PASSPHRASE_SERVER_PORT = 9911
 
 HOSTAPD_HOST = '127.0.0.1'
 HOSTAPD_PORT = 7788
@@ -45,19 +45,19 @@ def get_passphrase():
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.settimeout(5)
-            s.connect((CSI_HOST, CSI_PORT))
+            s.connect((PASSPHRASE_SERVER_HOST, PASSPHRASE_SERVER_PORT))
             passwd = s.recv(64).decode('ascii')
             if not passwd:
-                print(f"[SystemManager] Got empty passphrase from CSI")
+                print(f"[SystemManager] Got empty passphrase from passphrase server")
                 return False
-            print(f"[SystemManager] Got passphrase from CSI: {passwd}")
+            print(f"[SystemManager] Got passphrase from passphrase server: {passwd}")
             latest_passphrase = passwd
             return True
     except socket.timeout:
-        print(f"[SystemManager] Timeout connecting to CSI server")
+        print(f"[SystemManager] Timeout connecting to passphrase server")
         return False
     except Exception as e:
-        print(f"[SystemManager] Failed to get passphrase from CSI: {e}")
+        print(f"[SystemManager] Failed to get passphrase from passphrase server: {e}")
         return False
 
 
